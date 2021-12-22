@@ -10,15 +10,17 @@ def get_data_from_excel(uploaded_file):
 
     df = pd.ExcelFile(uploaded_file, engine="openpyxl")
 
-    # Columns to Read from Excel file
+    # Columns to read from Excel file
     vInfo_cols_to_use = ["VM Name","Power State","Cluster Name","MOID"]
     vCPU_cols_to_use = ["vCPUs","Peak %","Average %","Median %","95th Percentile % (recommended)","MOID"]
     vMemory_cols_to_use = ["Size (MiB)","Peak %","Average %","Median %","95th Percentile % (recommended)","MOID"]
+    vHosts_cols_to_use = ["Cluster","CPUs","VMs","CPU Cores","CPU Speed","Cores per CPU","Memory Size","CPU Usage","Memory Usage"]
 
     # Create df for each tab with only relevant columns
     df_vInfo = df.parse('vInfo', usecols=vInfo_cols_to_use)
     df_vCPU = df.parse('vCPU', usecols=vCPU_cols_to_use)
     df_vMemory = df.parse('vMemory', usecols=vMemory_cols_to_use)
+    df_vHosts = df.parse('vHosts', usecols=vHosts_cols_to_use)
 
     # Rename columns to make it shorter
     df_vCPU.rename(columns={'95th Percentile % (recommended)': '95th Percentile %'}, inplace=True)
@@ -28,32 +30,22 @@ def get_data_from_excel(uploaded_file):
     df_vMemory.loc[:,"Size (MiB)"] = df_vMemory["Size (MiB)"] / 1024 # Use GiB instead of MiB
     df_vMemory.rename(columns={'Size (MiB)': 'Size (GiB)'}, inplace=True) # Rename Column
 
-    # Add prefix to vCPU & vMemory columns from each tab as names are identical and would cause duplicate columns during merge
-    df_vCPU.columns = 'vCPU ' + df_vCPU.columns.values    
-    df_vCPU.rename(columns={'vCPU vCPUs': 'vCPUs'}, inplace=True)
-    df_vMemory.columns = 'vMemory ' + df_vMemory.columns.values
-
     # Add / Generate Total Columns from vCPU performance percentage data
     df_vCPU['vCPUs'] = df_vCPU['vCPUs'].astype(int)
-    df_vCPU.loc[:,'vCPU Peak #'] = df_vCPU.apply(lambda row: get_vCPU_total_values(row, 'vCPU Peak %'), axis=1).astype(int)
-    df_vCPU.loc[:,'vCPU Average #'] = df_vCPU.apply(lambda row: get_vCPU_total_values(row, 'vCPU Average %'), axis=1).astype(int)
-    df_vCPU.loc[:,'vCPU Median #'] = df_vCPU.apply(lambda row: get_vCPU_total_values(row, 'vCPU Median %'), axis=1).astype(int)
-    df_vCPU.loc[:,'vCPU 95th Percentile #'] = df_vCPU.apply(lambda row: get_vCPU_total_values(row, 'vCPU 95th Percentile %'), axis=1).astype(int)
+    df_vCPU.loc[:,'Peak #'] = df_vCPU.apply(lambda row: get_vCPU_total_values(row, 'Peak %'), axis=1).astype(int)
+    df_vCPU.loc[:,'Average #'] = df_vCPU.apply(lambda row: get_vCPU_total_values(row, 'Average %'), axis=1).astype(int)
+    df_vCPU.loc[:,'Median #'] = df_vCPU.apply(lambda row: get_vCPU_total_values(row, 'Median %'), axis=1).astype(int)
+    df_vCPU.loc[:,'95th Percentile #'] = df_vCPU.apply(lambda row: get_vCPU_total_values(row, '95th Percentile %'), axis=1).astype(int)
 
     # Add / Generate Total Columns from vMemory performance percentage data
-    df_vMemory.loc[:,'vMemory Peak #'] = df_vMemory.apply(lambda row: get_vMemory_total_values(row, 'vMemory Peak %'), axis=1)
-    df_vMemory.loc[:,'vMemory Average #'] = df_vMemory.apply(lambda row: get_vMemory_total_values(row, 'vMemory Average %'), axis=1)
-    df_vMemory.loc[:,'vMemory Median #'] = df_vMemory.apply(lambda row: get_vMemory_total_values(row, 'vMemory Median %'), axis=1)
-    df_vMemory.loc[:,'vMemory 95th Percentile #'] = df_vMemory.apply(lambda row: get_vMemory_total_values(row, 'vMemory 95th Percentile %'), axis=1)
+    df_vMemory.loc[:,'Peak #'] = df_vMemory.apply(lambda row: get_vMemory_total_values(row, 'Peak %'), axis=1)
+    df_vMemory.loc[:,'Average #'] = df_vMemory.apply(lambda row: get_vMemory_total_values(row, 'Average %'), axis=1)
+    df_vMemory.loc[:,'Median #'] = df_vMemory.apply(lambda row: get_vMemory_total_values(row, 'Median %'), axis=1)
+    df_vMemory.loc[:,'95th Percentile #'] = df_vMemory.apply(lambda row: get_vMemory_total_values(row, '95th Percentile %'), axis=1)
 
-    df_vinfo_vcpu_merged = pd.merge(df_vInfo, df_vCPU, left_on="MOID", right_on="vCPU MOID", how="left")
-    main_df = pd.merge(df_vinfo_vcpu_merged, df_vMemory, left_on="MOID", right_on="vMemory MOID", how="left")
-    main_df.drop(['MOID','vCPU MOID','vMemory MOID'], axis=1, inplace=True) # Drop no lomnger needed columns after merge
 
-    # Change column order to be more logic & easier to read
-    main_df = main_df[['VM Name', 'Power State', 'Cluster Name', 'vCPUs', 'vCPU Peak %', 'vCPU Peak #', 'vCPU Average %', 'vCPU Average #', 'vCPU Median %', 'vCPU Median #', 'vCPU 95th Percentile %', 'vCPU 95th Percentile #', 'vMemory Size (GiB)', 'vMemory Peak %', 'vMemory Peak #', 'vMemory Average %', 'vMemory Average #', 'vMemory Median %', 'vMemory Median #', 'vMemory 95th Percentile %', 'vMemory 95th Percentile #']]
     
-    return main_df
+    return df_vInfo, df_vCPU, df_vMemory, df_vHosts
 
 # Generate vCPU Values for Peak, Median, Average & 95 Percentile
 def get_vCPU_total_values(df_row, compare_value):
@@ -69,7 +61,7 @@ def get_vCPU_total_values(df_row, compare_value):
 
 # Generate vMemory Values for Peak, Median, Average & 95 Percentile
 def get_vMemory_total_values(df_row, compare_value):
-    vMemory_row_value = df_row['vMemory Size (GiB)']
+    vMemory_row_value = df_row['Size (GiB)']
     vMemory_perf_value = df_row[compare_value]
     if pd.isna(vMemory_perf_value):
         get_total_value = vMemory_row_value # if no data is available use provisioned vMemory data
@@ -96,6 +88,46 @@ def round_decimals_up(number:float, decimals:int=2):
         return math.ceil(number)
     factor = 10 ** decimals
     return np.ceil(number * factor) / factor
+
+# Generate vHost Overview Section
+def generate_vHosts_overview_df(df_vHosts):
+
+    vHosts_overview_first_column = {'': ["# Cluster", "# Host","# pSockets","# pCores","# Gesamt Ghz","# Gesamt Ghz in Benutzung","Max Taktrate / Prozessor","Ø Taktrate / Prozessor","Max CPU Nutzung","Ø CPU Nutzung","# Host RAM (alle Hosts)","# Host RAM (alle Hosts) in Benutzung","Max pRAM Nutzung in %","Ø pRAM Nutzung in %"]}
+    vHosts_overview_df = pd.DataFrame(vHosts_overview_first_column)
+
+    vHosts_Cluster = df_vHosts['Cluster'].nunique()
+    vHosts_Hosts = df_vHosts.shape[0]
+    vHosts_pSockets = int(df_vHosts["CPUs"].sum())
+    vHosts_pCores = int(df_vHosts["CPU Cores"].sum())
+    vHosts_gesamtGhz = df_vHosts["CPU Cores"]
+    print(vHosts_gesamtGhz)
+    #np.ceil(df_vHosts["CPU Cores"] * ())
+    vHosts_gesamtGhz_used = df_vHosts["CPU Cores"].sum() * df_vHosts["CPU Speed"].sum()
+    #=ROUNDUP(SUMPRODUCT(vHosts[cpuCores];vHosts[cpuSpeed];vHosts[CPU usage]/100)/1000;2)
+    #vHosts_Hosts = vHosts.
+    #vHosts_Hosts = vHosts.
+    #vHosts_Hosts = vHosts.
+    #vHosts_Hosts = vHosts.
+    #vHosts_Hosts = vHosts.
+    #vHosts_Hosts = vHosts.
+    #vHosts_Hosts = vHosts.
+    #vHosts_Hosts = vHosts.
+
+
+    #vCPU_provisioned = int(custom_df["vCPUs"].sum())
+    #vCPU_peak = int(custom_df["vCPU Peak #"].sum())
+    #vCPU_average = int(custom_df["vCPU Average #"].sum())
+    #vCPU_median = int(custom_df["vCPU Median #"].sum())
+    #vCPU_95_percentile = int(custom_df["vCPU 95th Percentile #"].sum())
+    #vCPU_overview_first_column = {'': ["# vCPUs (provisioned)", "# vCPUs (Peak)", "# vCPUs (Average)", "# vCPUs (Median)", "# vCPUs (95th Percentile)"]}
+    
+    #vCPU_overview_second_column = [vCPU_provisioned, vCPU_peak, vCPU_average, vCPU_median, vCPU_95_percentile]
+    #vCPU_overview_df.loc[:,'vCPU'] = vCPU_overview_second_column
+
+    return vHosts_overview_df
+
+
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # Generate vCPU Overview Section for streamlit column 1+2
 def generate_vCPU_overview_df(custom_df):
