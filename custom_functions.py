@@ -5,22 +5,27 @@ import streamlit as st
 
 
 # Generate Dataframe from Excel and make neccessary adjustment for easy consumption later on
-@st.cache
+@st.cache(allow_output_mutation=True)
 def get_data_from_excel(uploaded_file):
 
     df = pd.ExcelFile(uploaded_file, engine="openpyxl")
 
     # Columns to read from Excel file
     vInfo_cols_to_use = ["VM Name","Power State","Cluster Name","MOID"]
-    vCPU_cols_to_use = ["vCPUs","Peak %","Average %","Median %","95th Percentile % (recommended)","MOID"]
-    vMemory_cols_to_use = ["Size (MiB)","Peak %","Average %","Median %","95th Percentile % (recommended)","MOID"]
+    vCPU_cols_to_use = ["vCPUs","Peak %","Average %","Median %","95th Percentile % (recommended)","Cluster Name","MOID"]
+    vMemory_cols_to_use = ["Size (MiB)","Peak %","Average %","Median %","95th Percentile % (recommended)","Cluster Name","MOID"]
     vHosts_cols_to_use = ["Cluster","CPUs","VMs","CPU Cores","CPU Speed","Cores per CPU","Memory Size","CPU Usage","Memory Usage"]
+    vCluster_cols_to_use = ["Datacenter", "MOID","Cluster Name","CPU Usage %","Memory Usage %","95th Percentile Disk Throughput (KBps)","95th Percentile IOPS","95th Percentile Number of Reads","95th Percentile Number of Writes"]
+    vPartition_cols_to_use = ["VM Name","Power State","Consumed (MiB)","Capacity (MiB)","Datacenter Name","Cluster Name", "Host Name", "MOID"]
+
 
     # Create df for each tab with only relevant columns
     df_vInfo = df.parse('vInfo', usecols=vInfo_cols_to_use)
     df_vCPU = df.parse('vCPU', usecols=vCPU_cols_to_use)
     df_vMemory = df.parse('vMemory', usecols=vMemory_cols_to_use)
     df_vHosts = df.parse('vHosts', usecols=vHosts_cols_to_use)
+    df_vCluster = df.parse('vCluster', usecols=vCluster_cols_to_use)
+    df_vPartition = df.parse('vPartition', usecols=vPartition_cols_to_use)
 
     # Rename columns to make it shorter
     df_vCPU.rename(columns={'95th Percentile % (recommended)': '95th Percentile %'}, inplace=True)
@@ -29,6 +34,10 @@ def get_data_from_excel(uploaded_file):
     # Calculate from MiB to GiB & rename column
     df_vMemory.loc[:,"Size (MiB)"] = df_vMemory["Size (MiB)"] / 1024 # Use GiB instead of MiB
     df_vMemory.rename(columns={'Size (MiB)': 'Size (GiB)'}, inplace=True) # Rename Column
+    df_vPartition.loc[:,"Consumed (MiB)"] = df_vPartition["Consumed (MiB)"] / 1024 # Use GiB instead of MiB
+    df_vPartition.rename(columns={'Consumed (MiB)': 'Consumed (GiB)'}, inplace=True) # Rename Column
+    df_vPartition.loc[:,"Capacity (MiB)"] = df_vPartition["Capacity (MiB)"] / 1024 # Use GiB instead of MiB
+    df_vPartition.rename(columns={'Capacity (MiB)': 'Capacity (GiB)'}, inplace=True) # Rename Column
 
     # Add / Generate Total Columns from vCPU performance percentage data
     df_vCPU['vCPUs'] = df_vCPU['vCPUs'].astype(int)
@@ -43,9 +52,13 @@ def get_data_from_excel(uploaded_file):
     df_vMemory.loc[:,'Median #'] = df_vMemory.apply(lambda row: get_vMemory_total_values(row, 'Median %'), axis=1)
     df_vMemory.loc[:,'95th Percentile #'] = df_vMemory.apply(lambda row: get_vMemory_total_values(row, '95th Percentile %'), axis=1)
 
-
+    # Add Cluster Name & MOID column to vHosts, drop column Cluster (as same as MOID)
+    df_vHosts = pd.merge(df_vHosts, df_vCluster[['Cluster Name','MOID']], left_on='Cluster', right_on='MOID')
+    df_vHosts.drop('Cluster', axis=1, inplace=True)
+    df_vCluster.drop('MOID', axis=1, inplace=True)
+    print(df_vHosts)
     
-    return df_vInfo, df_vCPU, df_vMemory, df_vHosts
+    return df_vInfo, df_vCPU, df_vMemory, df_vHosts, df_vCluster, df_vPartition
 
 # Generate vCPU Values for Peak, Median, Average & 95 Percentile
 def get_vCPU_total_values(df_row, compare_value):
@@ -89,42 +102,82 @@ def round_decimals_up(number:float, decimals:int=2):
     factor = 10 ** decimals
     return np.ceil(number * factor) / factor
 
+# Generate vHost based CPU Information
+def generate_CPU_infos(df_vHosts_filtered):
+
+    total_ghz = (df_vHosts_filtered['CPU Cores'] * df_vHosts_filtered['CPU Speed']) / 1000
+    consumed_ghz = (df_vHosts_filtered['CPU Cores'] * df_vHosts_filtered['CPU Speed'] * (df_vHosts_filtered['CPU Usage']/100)) / 1000
+    cpu_percentage_temp = consumed_ghz.sum() / total_ghz.sum() * 100
+    cpu_percentage = [cpu_percentage_temp, (100-cpu_percentage_temp)]
+
+    return  round(total_ghz.sum(),2), round(consumed_ghz.sum(),2), cpu_percentage
+
+# Generate vHost based Memory Information
+def generate_Memory_infos(df_vHosts_filtered):
+
+    total_memory = df_vHosts_filtered['Memory Size']
+    consumed_memory = (df_vHosts_filtered['Memory Size'] * (df_vHosts_filtered['Memory Usage']/100))
+    memory_percentage_temp = df_vHosts_filtered["Memory Usage"].mean()
+    memory_percentage = [memory_percentage_temp, (100-memory_percentage_temp)]
+
+    return  round(total_memory.sum(),2), round(consumed_memory.sum(),2), memory_percentage
+
+# Generate vCluster based Read Write Ratio Information
+def generate_read_write_ratio_infos(df_vCluster_filtered):
+
+    sum_of_reads = df_vCluster_filtered['95th Percentile Number of Reads'].sum()
+    sum_of_writes = df_vCluster_filtered['95th Percentile Number of Writes'].sum()
+    overall_read_write = sum_of_reads + sum_of_writes
+    read_ratio = (sum_of_reads / overall_read_write)*100
+    write_ratio = (sum_of_writes / overall_read_write) *100
+
+    return round(read_ratio), round(write_ratio)
+
+# Generate vPartition based Storage Information
+def generate_Storage_infos(df_vPartition_filtered):
+
+    storage_consumed = df_vPartition_filtered['Consumed (GiB)'].sum() / 1024
+    storage_provisioned = df_vPartition_filtered['Capacity (GiB)'].sum() / 1024
+
+    storage_percentage_temp = storage_consumed / storage_provisioned * 100
+    storage_percentage = [storage_percentage_temp, storage_provisioned]
+
+    return  round(storage_provisioned,2), round(storage_consumed,2), storage_percentage
+
 # Generate vHost Overview Section
-def generate_vHosts_overview_df(df_vHosts):
+def generate_vHosts_overview_df(df_vHosts_filtered):
 
-    vHosts_overview_first_column = {'': ["# Cluster", "# Host","# pSockets","# pCores","# Gesamt Ghz","# Gesamt Ghz in Benutzung","Max Taktrate / Prozessor","Ø Taktrate / Prozessor","Max CPU Nutzung","Ø CPU Nutzung","# Host RAM (alle Hosts)","# Host RAM (alle Hosts) in Benutzung","Max pRAM Nutzung in %","Ø pRAM Nutzung in %"]}
-    vHosts_overview_df = pd.DataFrame(vHosts_overview_first_column)
-
-    vHosts_Cluster = df_vHosts['Cluster'].nunique()
-    vHosts_Hosts = df_vHosts.shape[0]
-    vHosts_pSockets = int(df_vHosts["CPUs"].sum())
-    vHosts_pCores = int(df_vHosts["CPU Cores"].sum())
-    vHosts_gesamtGhz = df_vHosts["CPU Cores"]
-    print(vHosts_gesamtGhz)
-    #np.ceil(df_vHosts["CPU Cores"] * ())
-    vHosts_gesamtGhz_used = df_vHosts["CPU Cores"].sum() * df_vHosts["CPU Speed"].sum()
-    #=ROUNDUP(SUMPRODUCT(vHosts[cpuCores];vHosts[cpuSpeed];vHosts[CPU usage]/100)/1000;2)
-    #vHosts_Hosts = vHosts.
-    #vHosts_Hosts = vHosts.
-    #vHosts_Hosts = vHosts.
-    #vHosts_Hosts = vHosts.
-    #vHosts_Hosts = vHosts.
-    #vHosts_Hosts = vHosts.
-    #vHosts_Hosts = vHosts.
-    #vHosts_Hosts = vHosts.
+    host_amount = round(df_vHosts_filtered.shape[0])
+    sockets_amount = round(df_vHosts_filtered['CPUs'].sum())
+    cores_amount = round(df_vHosts_filtered['CPU Cores'].sum())
+    max_vm_host = round(df_vHosts_filtered['VMs'].max())
+    average_vm_host = round(df_vHosts_filtered['VMs'].mean())
+    hardware_first_column_df = {'': ["# Hosts", "# pSockets","# pCores", "Max VM pro Host", "Ø VM pro Host"]}
+    hardware_df = pd.DataFrame(hardware_first_column_df)
+    hardware_second_column = [host_amount, sockets_amount, cores_amount, max_vm_host, average_vm_host]
+    hardware_df.loc[:,'Werte'] = hardware_second_column
 
 
-    #vCPU_provisioned = int(custom_df["vCPUs"].sum())
-    #vCPU_peak = int(custom_df["vCPU Peak #"].sum())
-    #vCPU_average = int(custom_df["vCPU Average #"].sum())
-    #vCPU_median = int(custom_df["vCPU Median #"].sum())
-    #vCPU_95_percentile = int(custom_df["vCPU 95th Percentile #"].sum())
-    #vCPU_overview_first_column = {'': ["# vCPUs (provisioned)", "# vCPUs (Peak)", "# vCPUs (Average)", "# vCPUs (Median)", "# vCPUs (95th Percentile)"]}
-    
-    #vCPU_overview_second_column = [vCPU_provisioned, vCPU_peak, vCPU_average, vCPU_median, vCPU_95_percentile]
-    #vCPU_overview_df.loc[:,'vCPU'] = vCPU_overview_second_column
+    max_core_amount = round(df_vHosts_filtered['CPU Cores'].max())
+    max_frequency_amount = round(df_vHosts_filtered['CPU Speed'].max())
+    average_frequency_amount = round(df_vHosts_filtered['CPU Speed'].mean())
+    max_usage_amount = round(df_vHosts_filtered['CPU Usage'].max())
+    average_usage_amount = round(df_vHosts_filtered['CPU Usage'].mean())
+    pCPU_first_column_df = {'': ["Max Core pro Host", "Max Taktrate / Prozessor (Ghz)","Ø Taktrate / Prozessor (Ghz)", "Max CPU Nutzung (%)", "Ø CPU Nutzung (%)"]}
+    pCPU_df = pd.DataFrame(pCPU_first_column_df)
+    pCPU_second_column = [max_core_amount, max_frequency_amount, average_frequency_amount,max_usage_amount,average_usage_amount]
+    pCPU_df.loc[:,'Werte'] = pCPU_second_column
 
-    return vHosts_overview_df
+
+    max_pRAM_amount = round(df_vHosts_filtered['Memory Size'].max())
+    max_pRAM_usage = round(df_vHosts_filtered['Memory Usage'].max())
+    average_pRAM_usage = round(df_vHosts_filtered['Memory Usage'].mean())
+    memory_first_column_df = {'': ["Max pRAM pro Host", "Max pRAM Nutzung (%)","Ø pRAM Nutzung (%)"]}
+    memory_df = pd.DataFrame(memory_first_column_df)
+    memory_second_column = [max_pRAM_amount, max_pRAM_usage, average_pRAM_usage]
+    memory_df.loc[:,'Werte'] = memory_second_column
+
+    return hardware_df, pCPU_df, memory_df
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------
