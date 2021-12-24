@@ -12,11 +12,12 @@ def get_data_from_excel(uploaded_file):
 
     # Columns to read from Excel file
     vInfo_cols_to_use = ["VM Name","Power State","Cluster Name","MOID"]
-    vCPU_cols_to_use = ["vCPUs","Peak %","Average %","Median %","95th Percentile % (recommended)","Cluster Name","MOID"]
-    vMemory_cols_to_use = ["Size (MiB)","Peak %","Average %","Median %","95th Percentile % (recommended)","Cluster Name","MOID"]
+    vCPU_cols_to_use = ["VM Name","Power State","vCPUs","Peak %","Average %","Median %","95th Percentile % (recommended)","Cluster Name","MOID"]
+    vMemory_cols_to_use = ["VM Name", "Power State","Size (MiB)","Peak %","Average %","Median %","95th Percentile % (recommended)","Cluster Name","MOID"]
     vHosts_cols_to_use = ["Cluster","CPUs","VMs","CPU Cores","CPU Speed","Cores per CPU","Memory Size","CPU Usage","Memory Usage"]
     vCluster_cols_to_use = ["Datacenter", "MOID","Cluster Name","CPU Usage %","Memory Usage %","95th Percentile Disk Throughput (KBps)","95th Percentile IOPS","95th Percentile Number of Reads","95th Percentile Number of Writes"]
     vPartition_cols_to_use = ["VM Name","Power State","Consumed (MiB)","Capacity (MiB)","Datacenter Name","Cluster Name", "Host Name", "MOID"]
+    vmList_cols_to_use = ["VM Name","Power State","vCPUs","Memory (MiB)","Thin Provisioned","Capacity (MiB)","Consumed (MiB)","Guest OS","Cluster Name","Datacenter Name"]
 
 
     # Create df for each tab with only relevant columns
@@ -26,6 +27,7 @@ def get_data_from_excel(uploaded_file):
     df_vHosts = df.parse('vHosts', usecols=vHosts_cols_to_use)
     df_vCluster = df.parse('vCluster', usecols=vCluster_cols_to_use)
     df_vPartition = df.parse('vPartition', usecols=vPartition_cols_to_use)
+    df_vmList = df.parse('vmList', usecols=vmList_cols_to_use)
 
     # Rename columns to make it shorter
     df_vCPU.rename(columns={'95th Percentile % (recommended)': '95th Percentile %'}, inplace=True)
@@ -38,6 +40,13 @@ def get_data_from_excel(uploaded_file):
     df_vPartition.rename(columns={'Consumed (MiB)': 'Consumed (GiB)'}, inplace=True) # Rename Column
     df_vPartition.loc[:,"Capacity (MiB)"] = df_vPartition["Capacity (MiB)"] / 1024 # Use GiB instead of MiB
     df_vPartition.rename(columns={'Capacity (MiB)': 'Capacity (GiB)'}, inplace=True) # Rename Column
+
+    df_vmList.loc[:,"Memory (MiB)"] = df_vmList["Memory (MiB)"] / 1024 # Use GiB instead of MiB
+    df_vmList.rename(columns={'Memory (MiB)': 'Memory (GiB)'}, inplace=True) # Rename Column
+    df_vmList.loc[:,"Capacity (MiB)"] = df_vmList["Capacity (MiB)"] / 1024 # Use GiB instead of MiB
+    df_vmList.rename(columns={'Capacity (MiB)': 'Capacity (GiB)'}, inplace=True) # Rename Column
+    df_vmList.loc[:,"Consumed (MiB)"] = df_vmList["Consumed (MiB)"] / 1024 # Use GiB instead of MiB
+    df_vmList.rename(columns={'Consumed (MiB)': 'Consumed (GiB)'}, inplace=True) # Rename Column
 
     # Add / Generate Total Columns from vCPU performance percentage data
     df_vCPU['vCPUs'] = df_vCPU['vCPUs'].astype(int)
@@ -56,9 +65,8 @@ def get_data_from_excel(uploaded_file):
     df_vHosts = pd.merge(df_vHosts, df_vCluster[['Cluster Name','MOID']], left_on='Cluster', right_on='MOID')
     df_vHosts.drop('Cluster', axis=1, inplace=True)
     df_vCluster.drop('MOID', axis=1, inplace=True)
-    print(df_vHosts)
     
-    return df_vInfo, df_vCPU, df_vMemory, df_vHosts, df_vCluster, df_vPartition
+    return df_vInfo, df_vCPU, df_vMemory, df_vHosts, df_vCluster, df_vPartition, df_vmList
 
 # Generate vCPU Values for Peak, Median, Average & 95 Percentile
 def get_vCPU_total_values(df_row, compare_value):
@@ -157,17 +165,15 @@ def generate_vHosts_overview_df(df_vHosts_filtered):
     hardware_second_column = [host_amount, sockets_amount, cores_amount, max_vm_host, average_vm_host]
     hardware_df.loc[:,'Werte'] = hardware_second_column
 
-
     max_core_amount = round(df_vHosts_filtered['CPU Cores'].max())
     max_frequency_amount = round(df_vHosts_filtered['CPU Speed'].max())
     average_frequency_amount = round(df_vHosts_filtered['CPU Speed'].mean())
     max_usage_amount = round(df_vHosts_filtered['CPU Usage'].max())
     average_usage_amount = round(df_vHosts_filtered['CPU Usage'].mean())
-    pCPU_first_column_df = {'': ["Max Core pro Host", "Max Taktrate / Prozessor (Ghz)","Ø Taktrate / Prozessor (Ghz)", "Max CPU Nutzung (%)", "Ø CPU Nutzung (%)"]}
+    pCPU_first_column_df = {'': ["Max Core pro Host", "Max Taktrate / Prozessor (Mhz)","Ø Taktrate / Prozessor (Mhz)", "Max CPU Nutzung (%)", "Ø CPU Nutzung (%)"]}
     pCPU_df = pd.DataFrame(pCPU_first_column_df)
     pCPU_second_column = [max_core_amount, max_frequency_amount, average_frequency_amount,max_usage_amount,average_usage_amount]
     pCPU_df.loc[:,'Werte'] = pCPU_second_column
-
 
     max_pRAM_amount = round(df_vHosts_filtered['Memory Size'].max())
     max_pRAM_usage = round(df_vHosts_filtered['Memory Usage'].max())
@@ -178,6 +184,42 @@ def generate_vHosts_overview_df(df_vHosts_filtered):
     memory_df.loc[:,'Werte'] = memory_second_column
 
     return hardware_df, pCPU_df, memory_df
+
+# Generate Top10 VMs based on vCPU (on)
+def generate_top10_vCPU_VMs_df(df_vCPU_filtered):
+
+    df_vCPU_filtered_vm_on = df_vCPU_filtered.query("`Power State`=='poweredOn'")
+    top_vms_vCPU = df_vCPU_filtered_vm_on[['VM Name','vCPUs']].nlargest(10,'vCPUs')
+
+    return top_vms_vCPU
+
+# Generate Top10 VMs based on vCPU (on)
+def generate_top10_vMemory_VMs_df(df_vMemory_filtered):
+
+    df_vMemory_filtered_vm_on = df_vMemory_filtered.query("`Power State`=='poweredOn'")
+    top_vms_vMemory = df_vMemory_filtered_vm_on[['VM Name','Size (GiB)']].nlargest(10,'Size (GiB)')
+    top_vms_vMemory = top_vms_vMemory.style.format(precision=0) 
+
+    return top_vms_vMemory
+
+# Generate Top10 VMs based on vStorage consumed
+def generate_top10_vStorage_consumed_VMs_df(df_vmList_filtered):
+
+    top_vms_vStorage_consumed = df_vmList_filtered[['VM Name','Consumed (GiB)']].nlargest(10,'Consumed (GiB)')
+    top_vms_vStorage_consumed.loc[:,"Consumed (GiB)"] = top_vms_vStorage_consumed["Consumed (GiB)"] / 1024
+    top_vms_vStorage_consumed.rename(columns={'Consumed (GiB)': 'Consumed (TiB)'}, inplace=True) # Rename Column
+    top_vms_vStorage_consumed = top_vms_vStorage_consumed.style.format(precision=2) 
+
+    return top_vms_vStorage_consumed
+
+# Generate Guest OS df
+def generate_guest_os_df(df_vmList_filtered):
+
+    guest_os_df = df_vmList_filtered['Guest OS'].value_counts()
+    guest_os_df = guest_os_df.reset_index()
+    guest_os_df.rename(columns={'index': ''}, inplace=True)
+
+    return guest_os_df
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------

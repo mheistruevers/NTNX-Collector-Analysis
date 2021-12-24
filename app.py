@@ -41,7 +41,7 @@ with st.sidebar:
     if uploaded_file is not None:
         try:
             # load excel, filter our relevant tabs and columns, merge all in one dataframe
-            df_vInfo, df_vCPU, df_vMemory, df_vHosts, df_vCluster, df_vPartition = custom_functions.get_data_from_excel(uploaded_file)            
+            df_vInfo, df_vCPU, df_vMemory, df_vHosts, df_vCluster, df_vPartition, df_vmList = custom_functions.get_data_from_excel(uploaded_file)            
 
             #st.sidebar.markdown('---')
             #st.sidebar.markdown('## **Filter**')
@@ -96,6 +96,7 @@ with content_section:
         df_vHosts_filtered = df_vHosts.query("`Cluster Name`==@vCluster_selected")
         df_vCluster_filtered = df_vCluster.query("`Cluster Name`==@vCluster_selected")
         df_vPartition_filtered = df_vPartition.query("`Cluster Name`==@vCluster_selected")
+        df_vmList_filtered = df_vmList.query("`Cluster Name`==@vCluster_selected")
 
         # Set bar chart setting to static for both  charts
         chart_config = {'staticPlot': True}
@@ -161,7 +162,7 @@ with content_section:
             with column_read_write_ratio:
                     read_ratio, write_ratio = custom_functions.generate_read_write_ratio_infos(df_vCluster_filtered)
                     st.markdown("<h4 style='text-align: center; color:#034ea2;'>Read / Write Verhältnis:</h4>", unsafe_allow_html=True)
-                    st.markdown(f"<h5 style='text-align: center;'>{read_ratio} / {write_ratio}</h5>", unsafe_allow_html=True)
+                    st.markdown(f"<h5 style='text-align: center;'>{read_ratio} % / {write_ratio} %</h5>", unsafe_allow_html=True)
             
             
 
@@ -170,35 +171,61 @@ with content_section:
 
             hardware_df, pCPU_df, memory_df = custom_functions.generate_vHosts_overview_df(df_vHosts_filtered)
             
-
             column_hardware, column_pCPU, column_pRAM = st.columns(3)
             with column_hardware:
-                st.markdown("<h5 style='text-align: center; color:#000000; background-color: #F5F5F5;'>vHost Details:</h5>", unsafe_allow_html=True)
+                st.markdown("<h5 style='text-align: center; color:#034ea2;'>vHost Details:</h5>", unsafe_allow_html=True)
                 st.table(hardware_df)
             with column_pCPU:
-                st.markdown("<h5 style='text-align: center; color:#000000; background-color: #F5F5F5;'>pCPU Details:</h5>", unsafe_allow_html=True)
+                st.markdown("<h5 style='text-align: center; color:#034ea2;'>pCPU Details:</h5>", unsafe_allow_html=True)
                 st.table(pCPU_df)
             with column_pRAM:
-                st.markdown("<h5 style='text-align: center; color:#000000; background-color: #F5F5F5;'> pMemory Details:</h5>", unsafe_allow_html=True)
+                st.markdown("<h5 style='text-align: center; color:#034ea2;'> pMemory Details:</h5>", unsafe_allow_html=True)
                 st.table(memory_df)
-            # Generate Overview Dataframe for vHosts      
             
             
-        
-        
+             
         VM_expander = st.expander(label='VM Details')
         with VM_expander:
-            st.write('3 columns für on off suspended')
-            st.write('3 columns für top vms nach vCPU, vRAM, & vMemory')
+
+            column_vm_1, column_vm_2, column_vm_3 = st.columns(3)            
+
+            with column_vm_1:        
+                df_vInfo_filtered_vm_on = df_vInfo_filtered.query("`Power State`=='poweredOn'")        
+                st.markdown(f"<h5 style='text-align: center; color:#034ea2;'>VMs On: { df_vInfo_filtered_vm_on['MOID'].shape[0] }</h5>", unsafe_allow_html=True)
+                st.write('---')
+                st.markdown(f"<h6 style='text-align: center; color:#000000;'>Top 10 VMs: vCPU (On)</h6>", unsafe_allow_html=True)                
+                top_vms_vCPU = custom_functions.generate_top10_vCPU_VMs_df(df_vCPU_filtered)
+                st.table(top_vms_vCPU)
+            with column_vm_2:
+                df_vInfo_filtered_vm_off = df_vInfo_filtered.query("`Power State`=='poweredOff'")
+                st.markdown(f"<h5 style='text-align: center; color:#034ea2;'>VMs Off: { df_vInfo_filtered_vm_off['MOID'].shape[0] }</h5>", unsafe_allow_html=True)
+                st.write('---')
+                st.markdown(f"<h6 style='text-align: center; color:#000000;'>Top 10 VMs: vMemory (On)</h6>", unsafe_allow_html=True)
+                top_vms_vMemory = custom_functions.generate_top10_vMemory_VMs_df(df_vMemory_filtered)
+                st.table(top_vms_vMemory)
+            with column_vm_3:
+                st.markdown(f"<h5 style='text-align: center; color:#034ea2;'>VMs Gesamt: { df_vInfo_filtered['MOID'].shape[0] }</h5>", unsafe_allow_html=True)
+                st.write('---')
+                st.markdown(f"<h6 style='text-align: center; color:#000000;'>Top 10 VMs: vStorage consumed</h6>", unsafe_allow_html=True)
+                top_vms_vStorage_consumed = custom_functions.generate_top10_vStorage_consumed_VMs_df(df_vmList_filtered)
+                st.table(top_vms_vStorage_consumed)
+
+        guest_os_expander = st.expander(label='VM Gastbetriebssystem Details')
+        with guest_os_expander:
+            guest_os_df = custom_functions.generate_guest_os_df(df_vmList_filtered)
+            st.table(guest_os_df)
+            st.write('Ein Auslesen der Gastbetriebssysteme setzt u.A. vorraus dass die passenden Guest Tools in den VMs installiert sind und diese eingeschaltet sind/waren. Dies ist i.d.R. nicht überall der Fall daher zeigt die obige Tabelle nur die Gastbetriebssysteme von den VMs bei welchen solch ein Auslesen möglich war.')
+
+
         vCPU_expander = st.expander(label='vCPU Details')
         with vCPU_expander:
-            st.write('Hi')
-        vRAM_expander = st.expander(label='vRAM Details')
+            st.write('Hier vCPU Auswertung einbauen, ggf mit Diagramm')
+        vRAM_expander = st.expander(label='vCPU Details')
         with vRAM_expander:
-            st.write('Hi')
+            st.write('Hier vRAM Auswertung einbauen, ggf mit Diagramm')
         vStorage_expander = st.expander(label='vStorage Details')
         with vStorage_expander:
-            st.write('Hi')
+            st.write('Hier vStorage Auswertung einbauen, ggf mit Diagramm')
         
 
         
