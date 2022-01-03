@@ -1,0 +1,8 @@
+/* Hide Streamlit Branding */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+/* Hide first column of streamlit Table (index numbering) */
+table td:nth-child(1) {display: none}
+table th:nth-child(1) {display: none}
