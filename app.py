@@ -27,7 +27,7 @@ warnings.simplefilter("ignore") # Ignore openpyxl Excile File Warning while read
 # Page sections
 ######################
 header_section = st.container() # Description of page & what it is about
-upload_filter_section = st.container() # File Uplaod & Filter section
+upload_filter_section = st.container() # File Upload & Filter section
 analysis_section = st.container() # Analysis section - either error message if wrong excel file or analysis content
 sizing_section = st.container() # Sizing section
 
@@ -45,7 +45,7 @@ with upload_filter_section:
     column_upload, column_filter = st.columns(2)
             
     with column_upload:
-        uploaded_file = st.file_uploader(label="Laden Sie Ihre Excel basierte Collector Auswertung hier hoch.", type=['xlsx'])
+        uploaded_file = st.file_uploader(label="Laden Sie Ihre Excel basierte Collector Auswertung hier hoch.", type=['xlsx'], help='Diesen Excel Export können Sie entweder direkt aus der Collector Anwendung heraus erzeugen oder über das Collector Portal mittels "Export as .XLS". ')
 
     if uploaded_file is not None:
         with column_filter:            
@@ -304,7 +304,7 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
             if 'vCPU_slider' not in st.session_state:
                 st.session_state['vCPU_slider'] = 10
 
-            form_vCPU_selected = st.selectbox('vCPU VM Power-Status selektieren:', ('On VMs - 95th Percentile vCPUs *', 'On VMs - Peak vCPUs', 'On VMs - Provisioned vCPUs','On und Off VMs - Provisioned vCPUs','On VMs - Average vCPUs', 'On VMs - Median vCPUs'), help='Text einfuegen', key='vCPU_selectbox', on_change=custom_functions.calculate_sizing_result_vCPU(vCPU_provisioned_df, vCPU_overview_df))
+            form_vCPU_selected = st.selectbox('vCPU Sizing Grundlage wählen:', ('On VMs - 95th Percentile vCPUs *', 'On VMs - Peak vCPUs', 'On VMs - Provisioned vCPUs','On und Off VMs - Provisioned vCPUs','On VMs - Average vCPUs', 'On VMs - Median vCPUs'), key='vCPU_selectbox', on_change=custom_functions.calculate_sizing_result_vCPU(vCPU_provisioned_df, vCPU_overview_df))
             form_vCPU_growth_selected = st.slider('Wieviel % vCPU Wachstum?', 0, 100, key='vCPU_slider', on_change=custom_functions.calculate_sizing_result_vCPU(vCPU_provisioned_df, vCPU_overview_df))
             
         with form_column_vRAM:
@@ -315,7 +315,7 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
             if 'vRAM_slider' not in st.session_state:
                 st.session_state['vRAM_slider'] = 30
 
-            form_vMemory_selected = st.selectbox('vMemory VM Power-Status selektieren:', ('On VMs - Provisioned vMemory *', 'On und Off VMs - Provisioned vMemory', 'On VMs - Peak vMemory', 'On VMs - 95th Percentile vMemory', 'On VMs - Average vMemory', 'On VMs - Median vMemory'), key='vRAM_selectbox', on_change=custom_functions.calculate_sizing_result_vRAM(vRAM_provisioned_df, vMemory_overview_df))
+            form_vMemory_selected = st.selectbox('vMemory Sizing Grundlage wählen:', ('On VMs - Provisioned vMemory *', 'On und Off VMs - Provisioned vMemory', 'On VMs - Peak vMemory', 'On VMs - 95th Percentile vMemory', 'On VMs - Average vMemory', 'On VMs - Median vMemory'), key='vRAM_selectbox', on_change=custom_functions.calculate_sizing_result_vRAM(vRAM_provisioned_df, vMemory_overview_df))
             form_vMemory_growth_selected = st.slider('Wieviel % vMemory Wachstum?', 0, 100, key='vRAM_slider', on_change=custom_functions.calculate_sizing_result_vRAM(vRAM_provisioned_df, vMemory_overview_df))
 
         with form_column_vStorage:
@@ -326,7 +326,7 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
             if 'vStorage_slider' not in st.session_state:
                 st.session_state['vStorage_slider'] = 20
 
-            form_vMemory_selected = st.selectbox('vMemory VM Power-Status selektieren:', ('On und Off VMs - Consumed VM Storage *', 'On VMs - Consumed VM Storage', 'On und Off VMs - Provisioned VM Storage', 'On VMs - Provisioned VM Storage'), help='text einfuegen', key='vStorage_selectbox', on_change=custom_functions.calculate_sizing_result_vRAM(vCPU_provisioned_df, vCPU_overview_df))
+            form_vStorage_selected = st.selectbox('vStorage Sizing Grundlage wählen:', ('On und Off VMs - Consumed VM Storage *', 'On VMs - Consumed VM Storage', 'On und Off VMs - Provisioned VM Storage', 'On VMs - Provisioned VM Storage'), key='vStorage_selectbox', on_change=custom_functions.calculate_sizing_result_vRAM(vCPU_provisioned_df, vCPU_overview_df))
             form_vStorage_growth_selected = st.slider('Wieviel % Storage Wachstum?', 0, 100, key='vStorage_slider', on_change=custom_functions.calculate_sizing_result_vRAM(vCPU_provisioned_df, vCPU_overview_df))
         st.markdown("""<p><u>Hinweis:</u> Die mit * markierten Optionen stellen die jeweilige Empfehlung für vCPU, vRAM und vStorage dar.</p>""", unsafe_allow_html=True)
 
