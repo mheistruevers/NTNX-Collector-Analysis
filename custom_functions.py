@@ -417,15 +417,15 @@ def generate_vStorage_overview_df(df_vPartition_filtered, df_vDisk_filtered, df_
     vPartition_capacity_consumed_total = str(round_up_2_decimals(df_vPartition_filtered['Consumed (GiB)'].sum() / 1024))+" TiB"
     vPartition_first_column_df = {'': [
             "Anzahl VMs mit vPartitions", "Anzahl vPartition - On", "Anzahl vPartition - Off", "Anzahl vPartition - Gesamt",
-            "Capacity provisioned (On)", "Capacity provisioned (Off)", "Capacity provisioned (Total)",
-            "Capacity consumed (On)", "Capacity consumed (Off)", "Capacity consumed (Total)"
+            "Capacity consumed (On)", "Capacity consumed (Off)", "Capacity consumed (Total)",
+            "Capacity provisioned (On)", "Capacity provisioned (Off)", "Capacity provisioned (Total)"            
         ]}
     vPartition_df = pd.DataFrame(vPartition_first_column_df)
     vPartition_df = vPartition_df.astype(str)
     vPartition_second_column_df = [
-            vPartition_amount_vms, vPartition_amount_on, vPartition_amount_off, vPartition_amount_total, 
-            vPartition_capacity_on, vPartition_capacity_off, vPartition_capacity_total,
-            vPartition_capacity_consumed_on, vPartition_capacity_consumed_off, vPartition_capacity_consumed_total
+            vPartition_amount_vms, vPartition_amount_on, vPartition_amount_off, vPartition_amount_total,            
+            vPartition_capacity_consumed_on, vPartition_capacity_consumed_off, vPartition_capacity_consumed_total,
+            vPartition_capacity_on, vPartition_capacity_off, vPartition_capacity_total
         ]
     vPartition_df.loc[:,'Werte'] = vPartition_second_column_df
     
@@ -478,20 +478,20 @@ def generate_vStorage_overview_df(df_vPartition_filtered, df_vDisk_filtered, df_
     vDisk_for_VMs_not_in_vPartition_filtered_on_value_80 = vDisk_for_VMs_not_in_vPartition_filtered_on_value * 0.8
     vDisk_for_VMs_not_in_vPartition_filtered_off_value_80 = vDisk_for_VMs_not_in_vPartition_filtered_off_value * 0.8
     vDisk_for_VMs_not_in_vPartition_filtered_total_value_80 = vDisk_for_VMs_not_in_vPartition_filtered_total_value * 0.8
-    vmList_consumed_on = str(round_up_2_decimals((df_vmList_filtered_on['Consumed (GiB)'].sum() / 1024)+(vDisk_for_VMs_not_in_vPartition_filtered_on_value*0.8)))+" TiB"
-    vmList_consumed_off = str(round_up_2_decimals((df_vmList_filtered_off['Consumed (GiB)'].sum() / 1024)+(vDisk_for_VMs_not_in_vPartition_filtered_off_value*0.8)))+" TiB"
-    vmList_consumed_total = str(round_up_2_decimals((df_vmList_filtered['Consumed (GiB)'].sum() / 1024)+(vDisk_for_VMs_not_in_vPartition_filtered_total_value*0.8)))+" TiB"
+    vmList_consumed_on = str(round_up_2_decimals((df_vmList_filtered_on['Consumed (GiB)'].sum() / 1024)+(vDisk_for_VMs_not_in_vPartition_filtered_on_value_80)))+" TiB"
+    vmList_consumed_off = str(round_up_2_decimals((df_vmList_filtered_off['Consumed (GiB)'].sum() / 1024)+(vDisk_for_VMs_not_in_vPartition_filtered_off_value_80)))+" TiB"
+    vmList_consumed_total = str(round_up_2_decimals((df_vmList_filtered['Consumed (GiB)'].sum() / 1024)+(vDisk_for_VMs_not_in_vPartition_filtered_total_value_80)))+" TiB"
 
     vmList_first_column_df = {'VMs': [
             "Anzahl VMs - On", "Anzahl VMs - Off", "Anzahl VMs - Gesamt",
-            "VM Capacity (On)", "VM Capacity (Off)", "VM Capacity (Gesamt)",
-            "VM Consumed (On)", "VM Consumed (Off)", "VM Consumed (Gesamt)"
+            "VM Consumed (On)", "VM Consumed (Off)", "VM Consumed (Gesamt)",
+            "VM Capacity (On)", "VM Capacity (Off)", "VM Capacity (Gesamt)"            
         ]}
     vmList_df = pd.DataFrame(vmList_first_column_df)
     vmList_second_column_df = [
             vmList_amount_on, vmList_amount_off, vmList_amount_total,
-            vmList_capacity_on, vmList_capacity_off, vmList_capacity_total,
-            vmList_consumed_on, vmList_consumed_off, vmList_consumed_total
+            vmList_consumed_on, vmList_consumed_off, vmList_consumed_total,
+            vmList_capacity_on, vmList_capacity_off, vmList_capacity_total            
         ]
     vmList_df.loc[:,'Werte'] = vmList_second_column_df 
 
@@ -513,8 +513,8 @@ def generate_vStorage_overview_df(df_vPartition_filtered, df_vDisk_filtered, df_
 @st.cache
 def generate_storage_charts(vmList_df):
     
-    vm_capacity_provisioned_overall = float(vmList_df.iloc[5]['Werte'].strip(' TiB'))
-    vm_capacity_consumed_overall = float(vmList_df.iloc[8]['Werte'].strip(' TiB'))
+    vm_capacity_provisioned_overall = float(vmList_df.iloc[8]['Werte'].strip(' TiB'))
+    vm_capacity_consumed_overall = float(vmList_df.iloc[5]['Werte'].strip(' TiB'))
 
     type_first_column = {'Type': ["Provisioned", "Consumed"]}
     storage_df = pd.DataFrame(type_first_column)
@@ -586,13 +586,13 @@ def calculate_sizing_result_vRAM(vRAM_provisioned_df, vMemory_overview_df):
 def calculate_sizing_result_vStorage(vmList_df):
 
     if st.session_state['vStorage_selectbox'] == 'On und Off VMs - Consumed VM Storage *':
-        vStorage_value = float(vmList_df.iloc[8]['Werte'].strip(' TiB'))
-    elif st.session_state['vStorage_selectbox'] == 'On VMs - Consumed VM Storage':
-        vStorage_value = float(vmList_df.iloc[6]['Werte'].strip(' TiB'))
-    elif st.session_state['vStorage_selectbox'] == 'On und Off VMs - Provisioned VM Storage':
         vStorage_value = float(vmList_df.iloc[5]['Werte'].strip(' TiB'))
-    elif st.session_state['vStorage_selectbox'] == 'On VMs - Provisioned VM Storage':
+    elif st.session_state['vStorage_selectbox'] == 'On VMs - Consumed VM Storage':
         vStorage_value = float(vmList_df.iloc[3]['Werte'].strip(' TiB'))
+    elif st.session_state['vStorage_selectbox'] == 'On und Off VMs - Provisioned VM Storage':
+        vStorage_value = float(vmList_df.iloc[8]['Werte'].strip(' TiB'))
+    elif st.session_state['vStorage_selectbox'] == 'On VMs - Provisioned VM Storage':
+        vStorage_value = float(vmList_df.iloc[6]['Werte'].strip(' TiB'))
 
     # Roundup values and convert to int
     vStorage_value = round_up_2_decimals(vStorage_value)

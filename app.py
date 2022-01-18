@@ -73,6 +73,11 @@ with upload_filter_section:
 
 if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_selected) != 0:
 
+    # Check is Nutanix CVMs are included in analysis which could lead to misinterpretations
+    check_for_cvms = df_vInfo[(df_vInfo['VM Name'].str.match('^NTNX-.*-CVM$')==True)]
+    if not check_for_cvms.empty:
+        upload_filter_section.warning('Achtung: Die Collector Auswertung scheint Nutanix CVMs zu enthalten welche die Auswertung (insbesondere im Storage Bereich) stark verfälschen können. Es ist empfohlen Auswertungen von Nutanix Umgebungen über Prism abzuziehen und nicht über den Hypervisor. Entweder neue Nutanix Auswertung abziehen (empfohlen) oder CVMs manuell aus der Collector Excel Datei entfernen.')
+
     with analysis_section: 
         st.markdown("---")
         st.markdown('### Auswertung')
