@@ -8,6 +8,8 @@ from PIL import Image
 import boto3
 from datetime import datetime
 from botocore.exceptions import ClientError
+import requests
+import json
 
 ######################
 # Initialize variables
