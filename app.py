@@ -62,6 +62,11 @@ with upload_filter_section:
                         options=sorted(df_vInfo["Cluster Name"].unique()),
                         default=sorted(df_vInfo["Cluster Name"].unique())
                     )
+
+                    if uploaded_file.name not in st.session_state:
+                        slack_string = 'Collector Analyse: '+str(df_vCluster['Cluster Name'].nunique())+' Cluster, '+str(df_vHosts['Cluster Name'].shape[0])+' Host und '+str(df_vInfo.shape[0])+' VMs.'
+                        custom_functions.send_slack_message_and_set_session_state(slack_string,uploaded_file)
+
                     uploaded_file_valid = True
                     st.success("Die Nutanix Collector Auswertung wurde erfolgreich hochgeladen. Filtern Sie bei Bedarf nach einzelnen Clustern.")
 
@@ -70,6 +75,8 @@ with upload_filter_section:
                     analysis_section.error("##### FEHLER: Die hochgeladene Nutanix Collector Excel Datei konnte leider nicht ausgelesen werden.")
                     analysis_section.markdown("Im folgenden die genaue Fehlermeldung für ein Troubleshooting:")
                     analysis_section.exception(e)
+                    st.session_state[uploaded_file.name] = True 
+                    custom_functions.send_slack_message_and_set_session_state('Collector Analyse ERROR: '+str(e.args),uploaded_file)
 
 if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_selected) != 0:
 

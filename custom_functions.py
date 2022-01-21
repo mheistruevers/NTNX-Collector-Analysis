@@ -120,8 +120,8 @@ def upload_to_aws(data):
     current_datetime_as_filename = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")+".xlsx"
     
     try:
-        s3_client.put_object(Bucket='ntnx-collector-analysis', Body=data.getvalue(), Key=current_datetime_as_filename)
-        st.session_state[data.name] = True # store uploaded filename as sessionstate variable in order to block reupload of same file
+        s3_client.put_object(Bucket=st.secrets["s3_bucket_name"], Body=data.getvalue(), Key=current_datetime_as_filename)
+        #st.session_state[data.name] = True # store uploaded filename as sessionstate variable in order to block reupload of same file
         return True
     except FileNotFoundError:
         return False
@@ -602,3 +602,13 @@ def calculate_sizing_result_vStorage(vmList_df):
     st.session_state['vStorage_basis'] = str(vStorage_value)
     st.session_state['vStorage_final'] = str(vStorage_value_calc)
     st.session_state['vStorage_growth'] = str(vStorage_value_diff)
+
+# Send Slack Message
+# NO cache function!
+def send_slack_message_and_set_session_state(payload, uploaded_file):
+    # store uploaded filename as sessionstate variable in order to block
+    st.session_state[uploaded_file.name] = True  
+    # Send a Slack message to a channel via a webhook. 
+    webhook = aws_access_key_id=st.secrets["slack_webhook_url"]
+    payload = {"text": payload}
+    requests.post(webhook, json.dumps(payload))
