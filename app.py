@@ -1,6 +1,6 @@
-import plotly.express as px  # pip install plotly-express
+import plotly.express as px
 import plotly.graph_objs as go
-import streamlit as st  # pip install streamlit
+import streamlit as st
 import custom_functions
 import pandas as pd
 import numpy as np
@@ -12,7 +12,7 @@ import base64
 ######################
 # Page Config
 ######################
-st.set_page_config(page_title="Nutanix Collector Analyse", page_icon='favicon.ico', layout="wide")
+st.set_page_config(page_title="Nutanix Collector Analyse", page_icon='favicon.png', layout="wide")
 # Use CSS Modifications stored in CSS file            
 st.markdown(f"<style>{custom_functions.local_css('style/style.css')}</style>", unsafe_allow_html=True)
 
