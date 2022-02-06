@@ -12,7 +12,7 @@ import base64
 ######################
 # Page Config
 ######################
-st.set_page_config(page_title="Nutanix Collector Analyse", page_icon='favicon.png', layout="wide")
+st.set_page_config(page_title="Nutanix Collector Analyse", page_icon='./style/favicon.png', layout="wide")
 # Use CSS Modifications stored in CSS file            
 st.markdown(f"<style>{custom_functions.local_css('style/style.css')}</style>", unsafe_allow_html=True)
 
