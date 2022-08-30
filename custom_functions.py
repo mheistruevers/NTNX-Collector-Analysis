@@ -5,10 +5,7 @@ import streamlit as st
 import plotly.express as px  # pip install plotly-express
 import plotly.io as pio
 from PIL import Image
-import boto3
 from datetime import datetime
-from botocore.exceptions import ClientError
-import requests
 import json
 
 ######################
@@ -114,19 +111,6 @@ def get_data_from_excel(uploaded_file):
     df_vDisk = pd.merge(df_vDisk, df_vInfo[['Power State','MOID']], left_on='MOID', right_on='MOID')
 
     return df_vInfo, df_vCPU, df_vMemory, df_vHosts, df_vCluster, df_vPartition, df_vmList, df_vDisk, df_vSnapshot
-
-def upload_to_aws(data):
-    s3_client = boto3.client('s3', aws_access_key_id=st.secrets["s3_access_key_id"],
-                      aws_secret_access_key=st.secrets["s3_secret_access_key"])
-
-    current_datetime_as_filename = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")+".xlsx"
-    
-    try:
-        s3_client.put_object(Bucket=st.secrets["s3_bucket_name"], Body=data.getvalue(), Key=current_datetime_as_filename)
-        #st.session_state[data.name] = True # store uploaded filename as sessionstate variable in order to block reupload of same file
-        return True
-    except FileNotFoundError:
-        return False
 
 # Generate vCPU Values for Peak, Median, Average & 95 Percentile
 def get_vCPU_total_values(df_row, compare_value):
@@ -530,7 +514,7 @@ def generate_storage_charts(vmList_df):
             xaxis={'visible': False, 'showticklabels': True}, yaxis={'visible': False, 'showticklabels': False}
             ) 
     
-    storage_chart.update_traces(marker_color=['#034EA2', '#B0D235'],texttemplate = "<b>%{label}:</b><br> %{value} TiB", textposition='inside',textfont_size=18, cliponaxis= False)
+    storage_chart.update_traces(marker_color=['#F36D21', '#034EA2'],texttemplate = "<b>%{label}:</b><br> %{value} TiB", textposition='inside',textfont_size=18, textfont_color=['#000000','#FFFFFF'], cliponaxis= False)
     storage_chart_config = { 'staticPlot': True} 
     storage_chart.add_layout_image(background_image)    
 
@@ -604,13 +588,3 @@ def calculate_sizing_result_vStorage(vmList_df):
     st.session_state['vStorage_basis'] = str(vStorage_value)
     st.session_state['vStorage_final'] = str(vStorage_value_calc)
     st.session_state['vStorage_growth'] = str(vStorage_value_diff)
-
-# Send Slack Message
-# NO cache function!
-def send_slack_message_and_set_session_state(payload, uploaded_file):
-    # store uploaded filename as sessionstate variable in order to block
-    st.session_state[uploaded_file.name] = True  
-    # Send a Slack message to a channel via a webhook. 
-    webhook = aws_access_key_id=st.secrets["slack_webhook_url"]
-    payload = {"text": payload}
-    requests.post(webhook, json.dumps(payload))

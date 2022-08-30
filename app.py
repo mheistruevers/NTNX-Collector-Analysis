@@ -35,8 +35,8 @@ sizing_section = st.container() # Sizing section
 # Page content
 ######################
 with header_section:
-    st.markdown("<h1 style='text-align: left; color:#034ea2;'>Nutanix Collector Analyse</h1>", unsafe_allow_html=True)
-    st.markdown('Ein Hobby-Projekt von [**Martin Stenke**](https://www.linkedin.com/in/mstenke/) zur einfachen Analyse einer [**Nutanix Collector**](https://collector.nutanix.com/) Auswertung. (Zuletzt aktualisiert: 21.01.2022)')
+    st.markdown("<h1 style='text-align: left; color:#000000;'>Nutanix Collector Analyse - by Martin Stenke - Modded by Michael Heistruevers</h1>", unsafe_allow_html=True)
+    st.markdown('Ein Hobby-Projekt von [**Martin Stenke**](https://www.linkedin.com/in/mstenke/) zur einfachen Analyse einer [**Nutanix Collector**](https://collector.nutanix.com/) Auswertung. (Zuletzt aktualisiert: 30.08.2022)')
     st.info('***Disclaimer: Hierbei handelt es sich lediglich um ein Hobby Projekt - keine Garantie auf Vollständigkeit oder Korrektheit der Auswertung / Daten.***')
     st.markdown("---")
 
@@ -50,9 +50,6 @@ with upload_filter_section:
     if uploaded_file is not None:
         with column_filter:            
                 try:
-                    # Store excel shortterm in AWS for debugging purposes
-                    if uploaded_file.name not in st.session_state:
-                        custom_functions.upload_to_aws(uploaded_file)
 
                     # load excel, filter our relevant tabs and columns, merge all in one dataframe
                     df_vInfo, df_vCPU, df_vMemory, df_vHosts, df_vCluster, df_vPartition, df_vmList, df_vDisk, df_vSnapshot = custom_functions.get_data_from_excel(uploaded_file)            
@@ -63,10 +60,6 @@ with upload_filter_section:
                         default=sorted(df_vInfo["Cluster Name"].unique())
                     )
 
-                    if uploaded_file.name not in st.session_state:
-                        slack_string = 'Collector Analyse: '+str(df_vCluster['Cluster Name'].nunique())+' Cluster, '+str(df_vHosts['Cluster Name'].shape[0])+' Host und '+str(df_vInfo.shape[0])+' VMs.'
-                        custom_functions.send_slack_message_and_set_session_state(slack_string,uploaded_file)
-
                     uploaded_file_valid = True
                     st.success("Die Nutanix Collector Auswertung wurde erfolgreich hochgeladen. Filtern Sie bei Bedarf nach einzelnen Clustern.")
 
@@ -76,7 +69,6 @@ with upload_filter_section:
                     analysis_section.markdown("Im folgenden die genaue Fehlermeldung für ein Troubleshooting:")
                     analysis_section.exception(e)
                     st.session_state[uploaded_file.name] = True 
-                    custom_functions.send_slack_message_and_set_session_state('Collector Analyse ERROR: '+str(e.args),uploaded_file)
 
 if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_selected) != 0:
 
@@ -111,7 +103,7 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
             column_cpu, column_memory, column_storage = st.columns(3)
             
             with column_cpu:
-                st.markdown("<h4 style='text-align: center; color:#034ea2;'>pCPU:</h4>", unsafe_allow_html=True)
+                st.markdown("<h4 style='text-align: center; color:#000000;'>pCPU:</h4>", unsafe_allow_html=True)
 
                 total_ghz, consumed_ghz, cpu_percentage = custom_functions.generate_CPU_infos(df_vHosts_filtered)
 
@@ -126,7 +118,7 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
                 st.markdown(f"<p style='text-align: center;'>{total_ghz} GHz verfügbar</p>", unsafe_allow_html=True)                
 
             with column_memory:
-                st.markdown("<h4 style='text-align: center; color:#034ea2;'>pMemory:</h4>", unsafe_allow_html=True)
+                st.markdown("<h4 style='text-align: center; color:#000000;'>pMemory:</h4>", unsafe_allow_html=True)
 
                 total_memory, consumed_memory, memory_percentage = custom_functions.generate_Memory_infos(df_vHosts_filtered)
 
@@ -141,7 +133,7 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
                 st.markdown(f"<p style='text-align: center;'>{total_memory} GiB verfügbar</p>", unsafe_allow_html=True)                
 
             with column_storage:
-                st.markdown("<h4 style='text-align: center; color:#034ea2;'>vStorage:</h4>", unsafe_allow_html=True)
+                st.markdown("<h4 style='text-align: center; color:#000000;'>vStorage:</h4>", unsafe_allow_html=True)
 
                 storage_provisioned, storage_consumed, storage_percentage = custom_functions.generate_Storage_infos(df_vPartition_filtered)
 
@@ -159,11 +151,11 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
 
             column_IOPS, column_read_write_ratio = st.columns(2)
             with column_IOPS:
-                    st.markdown("<h4 style='text-align: center; color:#034ea2;'>IOPS:</h4>", unsafe_allow_html=True)
+                    st.markdown("<h4 style='text-align: center; color:#000000;'>IOPS:</h4>", unsafe_allow_html=True)
                     st.markdown(f"<h5 style='text-align: center;'>{round(df_vCluster_filtered['95th Percentile IOPS'].sum(),2)}</h5>", unsafe_allow_html=True)
             with column_read_write_ratio:
                     read_ratio, write_ratio = custom_functions.generate_read_write_ratio_infos(df_vCluster_filtered)
-                    st.markdown("<h4 style='text-align: center; color:#034ea2;'>Read / Write Verhältnis:</h4>", unsafe_allow_html=True)
+                    st.markdown("<h4 style='text-align: center; color:#000000;'>Read / Write Verhältnis:</h4>", unsafe_allow_html=True)
                     st.markdown(f"<h5 style='text-align: center;'>{read_ratio} % / {write_ratio} %</h5>", unsafe_allow_html=True)      
 
         vHosts_expander = st.expander(label='vHosts Details')
@@ -173,13 +165,13 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
             column_pCPU, column_pRAM, column_hardware = st.columns(3)
             
             with column_pCPU:
-                st.markdown("<h5 style='text-align: center; color:#034ea2;'>pCPU Details:</h5>", unsafe_allow_html=True)
+                st.markdown("<h5 style='text-align: center; color:#000000;'>pCPU Details:</h5>", unsafe_allow_html=True)
                 st.table(pCPU_df)
             with column_pRAM:
-                st.markdown("<h5 style='text-align: center; color:#034ea2;'> pMemory Details:</h5>", unsafe_allow_html=True)
+                st.markdown("<h5 style='text-align: center; color:#000000;'> pMemory Details:</h5>", unsafe_allow_html=True)
                 st.table(memory_df)
             with column_hardware:
-                st.markdown("<h5 style='text-align: center; color:#034ea2;'>vHost Details:</h5>", unsafe_allow_html=True)
+                st.markdown("<h5 style='text-align: center; color:#000000;'>vHost Details:</h5>", unsafe_allow_html=True)
                 st.table(hardware_df)
                 
         VM_expander = st.expander(label='VM Details')
@@ -191,13 +183,13 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
             column_vm_on, column_vm_off, column_vm_total = st.columns(3)            
 
             with column_vm_on:                    
-                st.markdown(f"<h5 style='text-align: center; color:#034ea2;'>VMs On: { df_vInfo_filtered_vm_on['MOID'].shape[0] }</h5>", unsafe_allow_html=True)
+                st.markdown(f"<h5 style='text-align: center; color:#000000;'>VMs On: { df_vInfo_filtered_vm_on['MOID'].shape[0] }</h5>", unsafe_allow_html=True)
 
             with column_vm_off:                
-                st.markdown(f"<h5 style='text-align: center; color:#034ea2;'>VMs Off: { df_vInfo_filtered_vm_off['MOID'].shape[0] }</h5>", unsafe_allow_html=True)
+                st.markdown(f"<h5 style='text-align: center; color:#000000;'>VMs Off: { df_vInfo_filtered_vm_off['MOID'].shape[0] }</h5>", unsafe_allow_html=True)
 
             with column_vm_total:
-                st.markdown(f"<h5 style='text-align: center; color:#034ea2;'>VMs Gesamt: { df_vInfo_filtered['MOID'].shape[0] }</h5>", unsafe_allow_html=True)
+                st.markdown(f"<h5 style='text-align: center; color:#000000;'>VMs Gesamt: { df_vInfo_filtered['MOID'].shape[0] }</h5>", unsafe_allow_html=True)
 
             st.write('---')
             
@@ -227,10 +219,10 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
         with vCPU_expander:
             column_vCPU_overview, column_vCPU_performance_based = st.columns([1,2])
             with column_vCPU_overview:
-                st.markdown("<h5 style='text-align: left; color:#034ea2; '><u>Generelle vCPU Auswertung</u></h5>", unsafe_allow_html=True)
+                st.markdown("<h5 style='text-align: left; color:#000000; '><u>Generelle vCPU Auswertung</u></h5>", unsafe_allow_html=True)
 
             with column_vCPU_performance_based:
-                st.markdown("<h5 style='text-align: left; color:#034ea2; '><u>Nutzungs-basierte vCPU Auswertung (On)</u></h5>", unsafe_allow_html=True)
+                st.markdown("<h5 style='text-align: left; color:#000000; '><u>Nutzungs-basierte vCPU Auswertung (On)</u></h5>", unsafe_allow_html=True)
 
             vCPU_provisioned_df, vCPU_overview_df = custom_functions.generate_vCPU_overview_df(df_vCPU_filtered,df_vHosts_filtered)
             
@@ -252,10 +244,10 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
         with vRAM_expander:
             column_vRAM_overview, column_vRAM_performance_based = st.columns([1,2])
             with column_vRAM_overview:
-                st.markdown("<h5 style='text-align: left; color:#034ea2; '><u>Generelle vMemory Auswertung</u></h5>", unsafe_allow_html=True)
+                st.markdown("<h5 style='text-align: left; color:#000000; '><u>Generelle vMemory Auswertung</u></h5>", unsafe_allow_html=True)
 
             with column_vRAM_performance_based:
-                st.markdown("<h5 style='text-align: left; color:#034ea2; '><u>Nutzungs-basierte vMemory Auswertung (On)</u></h5>", unsafe_allow_html=True)
+                st.markdown("<h5 style='text-align: left; color:#000000; '><u>Nutzungs-basierte vMemory Auswertung (On)</u></h5>", unsafe_allow_html=True)
 
             vRAM_provisioned_df, vMemory_overview_df = custom_functions.generate_vRAM_overview_df(df_vMemory_filtered)
             
@@ -279,19 +271,19 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
             vPartition_df, vDisk_df, vmList_df, vSnapshot_df = custom_functions.generate_vStorage_overview_df(df_vPartition_filtered, df_vDisk_filtered, df_vmList_filtered, df_vSnapshot_filtered)
 
             with column_vPartition:
-                st.markdown("<h5 style='text-align: left; color:#034ea2; '><u>vPartition Auswertung</u></h5>", unsafe_allow_html=True)            
+                st.markdown("<h5 style='text-align: left; color:#000000; '><u>vPartition Auswertung</u></h5>", unsafe_allow_html=True)            
                 st.table(vPartition_df)
 
             with column_vDisk:
-                st.markdown("<h5 style='text-align: left; color:#034ea2; '><u>vDisk Auswertung</u></h5>", unsafe_allow_html=True)
+                st.markdown("<h5 style='text-align: left; color:#000000; '><u>vDisk Auswertung</u></h5>", unsafe_allow_html=True)
                 st.table(vDisk_df)
 
             with column_vSnapshot:
-                st.markdown("<h5 style='text-align: left; color:#034ea2; '><u>vSnapshot Auswertung</u></h5>", unsafe_allow_html=True)
+                st.markdown("<h5 style='text-align: left; color:#000000; '><u>vSnapshot Auswertung</u></h5>", unsafe_allow_html=True)
                 st.table(vSnapshot_df)
                 st.write('Die vSnapshots werden beim Sizing nicht berücksichtigt und dienen nur als Zusatzinformation.')
 
-            st.markdown("<h5 style='text-align: left; color:#034ea2; '><u>VM Storage Auswertung</u></h5>", unsafe_allow_html=True)
+            st.markdown("<h5 style='text-align: left; color:#000000; '><u>VM Storage Auswertung</u></h5>", unsafe_allow_html=True)
             st.write('In der Regel werden bei einer Auswertung die vPartition Daten herangezogen. Jedoch kann es sein, dass nicht für alle VMs die vPartition Daten vorliegen (z.B. durch fehlende Guest Tools), daher wird für diese VMs auf die vDisk Daten zurückgegriffen um so für alle VMs den Storage Bedarf bestmöglich erfassen zu können. Für eine `provisioned` Storage Berechnung wird 100% der vDisk Kapazität angenommen, für eine `consumed` Storage Berechnung wird 80% der vDisk Kapazität angenommen.')
 
             storage_chart, storage_chart_config = custom_functions.generate_storage_charts(vmList_df)
@@ -299,7 +291,7 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
             with column_vm_storage_table:
                 st.table(vmList_df)
             with column_vm_storage_chart:
-                st.markdown("<h5 style='text-align: center; color:#034ea2; '>VM Capacity - Gesamt:</h5>", unsafe_allow_html=True)
+                st.markdown("<h5 style='text-align: center; color:#000000; '>VM Capacity - Gesamt:</h5>", unsafe_allow_html=True)
                 st.plotly_chart(storage_chart,use_container_width=True, config=storage_chart_config)    
     
 
@@ -309,7 +301,7 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
           
         form_column_vCPU, form_column_vRAM, form_column_vStorage = st.columns(3)
         with form_column_vCPU:
-            st.markdown("<h4 style='text-align: center; color:#034ea2; '><u>vCPU Sizing:</u></h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='text-align: center; color:#000000; '><u>vCPU Sizing:</u></h4>", unsafe_allow_html=True)
 
             if 'vCPU_selectbox' not in st.session_state:
                 st.session_state['vCPU_selectbox'] = 'On VMs - 95th Percentile vCPUs *'
@@ -320,7 +312,7 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
             form_vCPU_growth_selected = st.slider('Wieviel % vCPU Wachstum?', 0, 100, key='vCPU_slider', on_change=custom_functions.calculate_sizing_result_vCPU(vCPU_provisioned_df, vCPU_overview_df))
             
         with form_column_vRAM:
-            st.markdown("<h4 style='text-align: center; color:#034ea2; '><u>vMemory Sizing:</u></h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='text-align: center; color:#000000; '><u>vMemory Sizing:</u></h4>", unsafe_allow_html=True)
 
             if 'vRAM_selectbox' not in st.session_state:
                 st.session_state['vRAM_selectbox'] = 'On VMs - Provisioned vMemory *'
@@ -331,7 +323,7 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
             form_vMemory_growth_selected = st.slider('Wieviel % vMemory Wachstum?', 0, 100, key='vRAM_slider', on_change=custom_functions.calculate_sizing_result_vRAM(vRAM_provisioned_df, vMemory_overview_df))
 
         with form_column_vStorage:
-            st.markdown("<h4 style='text-align: center; color:#034ea2; '><u>vStorage Sizing:</u></h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='text-align: center; color:#000000; '><u>vStorage Sizing:</u></h4>", unsafe_allow_html=True)
 
             if 'vStorage_selectbox' not in st.session_state:
                 st.session_state['vStorage_selectbox'] = 'On und Off VMs - Consumed VM Storage *'
@@ -361,7 +353,7 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
 
         with result_column_vCPU:
             st.markdown(f"""<div class="container"><img class="logo-img" src="data:image/png;base64,{base64.b64encode(open("images/vCPU.png", "rb").read()).decode()}"></div>""", unsafe_allow_html=True)
-            st.markdown("<h4 style='text-align: left; color:#034ea2;'>vCPU</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='text-align: left; color:#000000;'>vCPU</h4>", unsafe_allow_html=True)
 
             custom_functions.calculate_sizing_result_vCPU(vCPU_provisioned_df, vCPU_overview_df)
             st.metric(label="", value=st.session_state['vCPU_basis']+ ' vCPUs')
@@ -369,7 +361,7 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
 
         with result_column_vRAM:
             st.markdown(f"""<div class="container"><img class="logo-img" src="data:image/png;base64,{base64.b64encode(open("images/vRAM.png", "rb").read()).decode()}"></div>""", unsafe_allow_html=True)
-            st.markdown("<h4 style='text-align: left; color:#034ea2;'>vRAM</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='text-align: left; color:#000000;'>vRAM</h4>", unsafe_allow_html=True)
 
             custom_functions.calculate_sizing_result_vRAM(vRAM_provisioned_df, vMemory_overview_df)            
             st.metric(label="", value=st.session_state['vRAM_basis']+" GiB")
@@ -377,9 +369,8 @@ if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_se
 
         with result_column_vStorage:
             st.markdown(f"""<div class="container"><img class="logo-img" src="data:image/png;base64,{base64.b64encode(open("images/vStorage.png", "rb").read()).decode()}"></div>""", unsafe_allow_html=True)
-            st.markdown("<h4 style='text-align: left; color:#034ea2;'>vStorage</h4>", unsafe_allow_html=True)            
+            st.markdown("<h4 style='text-align: left; color:#000000;'>vStorage</h4>", unsafe_allow_html=True)            
 
             custom_functions.calculate_sizing_result_vStorage(vmList_df)  
             st.metric(label="", value=st.session_state['vStorage_basis']+" TiB")
             st.metric(label="", value=st.session_state['vStorage_final']+" TiB", delta=st.session_state['vStorage_growth']+" TiB")
-
