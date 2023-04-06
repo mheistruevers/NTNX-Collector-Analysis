@@ -31,7 +31,7 @@ def get_data_from_excel(uploaded_file):
 
     # Columns to read from Excel file
     vInfo_cols_to_use = ["VM Name","Power State","Cluster Name","MOID"]
-    vCPU_cols_to_use = ["VM Name","Power State","vCPUs","Peak %","Average ","Median %","95th Percentile % (recommended)","Cluster Name","MOID"]
+    vCPU_cols_to_use = ["VM Name","Power State","vCPUs","Peak %","Average %","Median %","95th Percentile % (recommended)","Cluster Name","MOID"]
     vMemory_cols_to_use = ["VM Name", "Power State","Size (MiB)","Peak %","Average %","Median %","95th Percentile % (recommended)","Cluster Name","MOID"]
     vHosts_cols_to_use = ["Cluster","CPUs","VMs","CPU Cores","CPU Speed","Cores per CPU","Memory Size","CPU Usage","Memory Usage"]
     vCluster_cols_to_use = ["Datacenter", "MOID","Cluster Name","CPU Usage %","Memory Usage %","95th Percentile Disk Throughput (KBps)","95th Percentile IOPS","95th Percentile Number of Reads","95th Percentile Number of Writes"]
@@ -51,11 +51,9 @@ def get_data_from_excel(uploaded_file):
     df_vDisk = df.parse('vDisk', usecols=vDisk_cols_to_use)
     df_vSnapshot = df.parse('vSnapshot', usecols=vSnapshot_cols_to_use)
 
-    # Rename columns to make it shorter and correct names
+    # Rename columns to make it shorter
     df_vCPU.rename(columns={'95th Percentile % (recommended)': '95th Percentile %'}, inplace=True)
     df_vMemory.rename(columns={'95th Percentile % (recommended)': '95th Percentile %'}, inplace=True)
-    df_vCPU.rename(columns={'Average ': 'Average %'}, inplace=True)
-
     
     # Calculate from MiB to GiB & rename column
     df_vMemory.loc[:,"Size (MiB)"] = df_vMemory["Size (MiB)"] / 1024 # Use GiB instead of MiB
