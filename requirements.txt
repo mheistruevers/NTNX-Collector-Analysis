@@ -1,7 +1,7 @@
-streamlit==1.8.1
-boto3==1.20.26
-plotly==5.5.0
-openpyxl==3.0.9
+streamlit>=1.8.1
+boto3>=1.20.26
+plotly>=5.5.0
+openpyxl>=3.0.9
 
 # old requirements file
 #lotly==5.4.0
