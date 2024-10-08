@@ -38,7 +38,7 @@ def get_data_from_excel(uploaded_file):
     vPartition_cols_to_use = ["VM Name","Power State","Consumed (MiB)","Capacity (MiB)","Datacenter Name","Cluster Name", "Host Name", "MOID"]    
     vmList_cols_to_use = ["VM Name","Power State","vCPUs","Memory (MiB)","Thin Provisioned","Capacity (MiB)","Consumed (MiB)","Guest OS","Cluster Name","Datacenter Name"]
     vDisk_cols_to_use = ["VM Name", "Capacity (MiB)", "Thin Provisioned", "Cluster Name", "MOID"]
-    vSnapshot_cols_to_use = ["Size (MiB)", "Cluster Name", "MOID"]
+    vSnapshot_cols_to_use = ["Size MiB (vmsn)", "Cluster Name", "MOID"]
 
     # Create df for each tab with only relevant columns
     df_vInfo = df.parse('vInfo', usecols=vInfo_cols_to_use)
@@ -51,9 +51,11 @@ def get_data_from_excel(uploaded_file):
     df_vDisk = df.parse('vDisk', usecols=vDisk_cols_to_use)
     df_vSnapshot = df.parse('vSnapshot', usecols=vSnapshot_cols_to_use)
 
-    # Rename columns to make it shorter
+    # Rename columns to make it shorter and correct names
     df_vCPU.rename(columns={'95th Percentile % (recommended)': '95th Percentile %'}, inplace=True)
     df_vMemory.rename(columns={'95th Percentile % (recommended)': '95th Percentile %'}, inplace=True)
+    df_vCPU.rename(columns={'Average ': 'Average %'}, inplace=True)
+
     
     # Calculate from MiB to GiB & rename column
     df_vMemory.loc[:,"Size (MiB)"] = df_vMemory["Size (MiB)"] / 1024 # Use GiB instead of MiB
@@ -74,8 +76,8 @@ def get_data_from_excel(uploaded_file):
     df_vDisk.rename(columns={'Capacity (MiB)': 'Capacity (GiB)'}, inplace=True) # Rename Column
 
     df_vSnapshot
-    df_vSnapshot.loc[:,"Size (MiB)"] = df_vSnapshot["Size (MiB)"] / 1024 # Use GiB instead of MiB
-    df_vSnapshot.rename(columns={'Size (MiB)': 'Size (GiB)'}, inplace=True) # Rename Column
+    df_vSnapshot.loc[:,"Size MiB (vmsn)"] = df_vSnapshot["Size MiB (vmsn)"] / 1024 # Use GiB instead of MiB
+    df_vSnapshot.rename(columns={'Size MiB (vmsn)': 'Size (GiB)'}, inplace=True) # Rename Column
 
     # Add / Generate Total Columns from vCPU performance percentage data
     df_vCPU['vCPUs'] = df_vCPU['vCPUs'].astype(np.int16)
@@ -438,7 +440,7 @@ def generate_vStorage_overview_df(df_vPartition_filtered, df_vDisk_filtered, df_
         ]
     vDisk_df.loc[:,'Werte'] = vDisk_second_column_df
     
-    vDisk_for_VMs_not_in_vPartition = pd.merge(df_vDisk_filtered[['VM Name','Capacity (GiB)','Power State','MOID']],df_vPartition_filtered[['MOID']],on='MOID', how='left', indicator=True).query("`_merge`=='left_only'").drop("_merge", 1)
+    vDisk_for_VMs_not_in_vPartition = pd.merge(df_vDisk_filtered[['VM Name','Capacity (GiB)','Power State','MOID']],df_vPartition_filtered[['MOID']],on='MOID', how='left', indicator=True).query("`_merge`=='left_only'").drop("_merge", axis=1)
     vDisk_for_VMs_not_in_vPartition_filtered_on = vDisk_for_VMs_not_in_vPartition.query("`Power State`=='poweredOn'")
     vDisk_for_VMs_not_in_vPartition_filtered_on_value = round_up_2_decimals(vDisk_for_VMs_not_in_vPartition_filtered_on['Capacity (GiB)'].sum() / 1024)
     vDisk_for_VMs_not_in_vPartition_filtered_off = vDisk_for_VMs_not_in_vPartition.query("`Power State`=='poweredOff'")
