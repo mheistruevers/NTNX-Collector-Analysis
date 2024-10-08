@@ -31,14 +31,14 @@ def get_data_from_excel(uploaded_file):
 
     # Columns to read from Excel file
     vInfo_cols_to_use = ["VM Name","Power State","Cluster Name","MOID"]
-    vCPU_cols_to_use = ["VM Name","Power State","vCPUs","Peak %","Average ","Median %","95th Percentile % (recommended)","Cluster Name","MOID"]
+    vCPU_cols_to_use = ["VM Name","Power State","vCPUs","Peak %","Average %","Median %","95th Percentile % (recommended)","Cluster Name","MOID"]
     vMemory_cols_to_use = ["VM Name", "Power State","Size (MiB)","Peak %","Average %","Median %","95th Percentile % (recommended)","Cluster Name","MOID"]
     vHosts_cols_to_use = ["Cluster","CPUs","VMs","CPU Cores","CPU Speed","Cores per CPU","Memory Size","CPU Usage","Memory Usage"]
     vCluster_cols_to_use = ["Datacenter", "MOID","Cluster Name","CPU Usage %","Memory Usage %","95th Percentile Disk Throughput (KBps)","95th Percentile IOPS","95th Percentile Number of Reads","95th Percentile Number of Writes"]
     vPartition_cols_to_use = ["VM Name","Power State","Consumed (MiB)","Capacity (MiB)","Datacenter Name","Cluster Name", "Host Name", "MOID"]    
     vmList_cols_to_use = ["VM Name","Power State","vCPUs","Memory (MiB)","Thin Provisioned","Capacity (MiB)","Consumed (MiB)","Guest OS","Cluster Name","Datacenter Name"]
     vDisk_cols_to_use = ["VM Name", "Capacity (MiB)", "Thin Provisioned", "Cluster Name", "MOID"]
-    vSnapshot_cols_to_use = ["Size (MiB)", "Cluster Name", "MOID"]
+    vSnapshot_cols_to_use = ["Size MiB (vmsn)", "Cluster Name", "MOID"]
 
     # Create df for each tab with only relevant columns
     df_vInfo = df.parse('vInfo', usecols=vInfo_cols_to_use)
