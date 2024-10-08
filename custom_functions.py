@@ -440,7 +440,7 @@ def generate_vStorage_overview_df(df_vPartition_filtered, df_vDisk_filtered, df_
         ]
     vDisk_df.loc[:,'Werte'] = vDisk_second_column_df
     
-    vDisk_for_VMs_not_in_vPartition = pd.merge(df_vDisk_filtered[['VM Name','Capacity (GiB)','Power State','MOID']],df_vPartition_filtered[['MOID']],on='MOID', how='left', indicator=True).query("`_merge`=='left_only'").drop("_merge", 1)
+    vDisk_for_VMs_not_in_vPartition = pd.merge(df_vDisk_filtered[['VM Name','Capacity (GiB)','Power State','MOID']],df_vPartition_filtered[['MOID']],on='MOID', how='left', indicator=True).query("`_merge`=='left_only'").drop("_merge", axis=1)
     vDisk_for_VMs_not_in_vPartition_filtered_on = vDisk_for_VMs_not_in_vPartition.query("`Power State`=='poweredOn'")
     vDisk_for_VMs_not_in_vPartition_filtered_on_value = round_up_2_decimals(vDisk_for_VMs_not_in_vPartition_filtered_on['Capacity (GiB)'].sum() / 1024)
     vDisk_for_VMs_not_in_vPartition_filtered_off = vDisk_for_VMs_not_in_vPartition.query("`Power State`=='poweredOff'")
