@@ -38,7 +38,7 @@ def get_data_from_excel(uploaded_file):
     vPartition_cols_to_use = ["VM Name","Power State","Consumed (MiB)","Capacity (MiB)","Datacenter Name","Cluster Name", "Host Name", "MOID"]    
     vmList_cols_to_use = ["VM Name","Power State","vCPUs","Memory (MiB)","Thin Provisioned","Capacity (MiB)","Consumed (MiB)","Guest OS","Cluster Name","Datacenter Name"]
     vDisk_cols_to_use = ["VM Name", "Capacity (MiB)", "Thin Provisioned", "Cluster Name", "MOID"]
-    vSnapshot_cols_to_use = ["Size MiB (vmsn)", "Cluster Name", "MOID"]
+    vSnapshot_cols_to_use = ["Size (MiB)", "Cluster Name", "MOID"]
 
     # Create df for each tab with only relevant columns
     df_vInfo = df.parse('vInfo', usecols=vInfo_cols_to_use)
@@ -76,8 +76,8 @@ def get_data_from_excel(uploaded_file):
     df_vDisk.rename(columns={'Capacity (MiB)': 'Capacity (GiB)'}, inplace=True) # Rename Column
 
     df_vSnapshot
-    df_vSnapshot.loc[:,"Size MiB (vmsn)"] = df_vSnapshot["Size MiB (vmsn)"] / 1024 # Use GiB instead of MiB
-    df_vSnapshot.rename(columns={'Size MiB (vmsn)': 'Size (GiB)'}, inplace=True) # Rename Column
+    df_vSnapshot.loc[:,"Size (MiB)"] = df_vSnapshot["Size (MiB)"] / 1024 # Use GiB instead of MiB
+    df_vSnapshot.rename(columns={'Size (MiB)': 'Size (GiB)'}, inplace=True) # Rename Column
 
     # Add / Generate Total Columns from vCPU performance percentage data
     df_vCPU['vCPUs'] = df_vCPU['vCPUs'].astype(np.int16)
