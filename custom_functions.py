@@ -38,7 +38,7 @@ def get_data_from_excel(uploaded_file):
     vPartition_cols_to_use = ["VM Name","Power State","Consumed (MiB)","Capacity (MiB)","Datacenter Name","Cluster Name", "Host Name", "MOID"]    
     vmList_cols_to_use = ["VM Name","Power State","vCPUs","Memory (MiB)","Thin Provisioned","Capacity (MiB)","Consumed (MiB)","Guest OS","Cluster Name","Datacenter Name"]
     vDisk_cols_to_use = ["VM Name", "Capacity (MiB)", "Thin Provisioned", "Cluster Name", "MOID"]
-    vSnapshot_cols_to_use = ["Size MiB (vmsn)", "Cluster Name", "MOID"]
+    # vSnapshot_cols_to_use = ["Size MiB (vmsn)", "Cluster Name", "MOID"]
 
      # Load vSnapshot sheet first to check column names
     df_vSnapshot_raw = df.parse('vSnapshot')
