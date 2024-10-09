@@ -40,6 +40,17 @@ def get_data_from_excel(uploaded_file):
     vDisk_cols_to_use = ["VM Name", "Capacity (MiB)", "Thin Provisioned", "Cluster Name", "MOID"]
     vSnapshot_cols_to_use = ["Size MiB (vmsn)", "Cluster Name", "MOID"]
 
+     # Load vSnapshot sheet first to check column names
+    df_vSnapshot_raw = df.parse('vSnapshot')
+
+    # Check if the column name is "Size MiB (vmsn)" or "Size (MiB)"
+    if 'Size MiB (vmsn)' in df_vSnapshot_raw.columns:
+        vSnapshot_cols_to_use = ["Size MiB (vmsn)", "Cluster Name", "MOID"]
+    elif 'Size (MiB)' in df_vSnapshot_raw.columns:
+        vSnapshot_cols_to_use = ["Size (MiB)", "Cluster Name", "MOID"]
+    else:
+        raise ValueError("Neither 'Size MiB (vmsn)' nor 'Size (MiB)' column found in vSnapshot sheet")
+    
     # Create df for each tab with only relevant columns
     df_vInfo = df.parse('vInfo', usecols=vInfo_cols_to_use)
     df_vCPU = df.parse('vCPU', usecols=vCPU_cols_to_use)
@@ -75,9 +86,17 @@ def get_data_from_excel(uploaded_file):
     df_vDisk.loc[:,"Capacity (MiB)"] = df_vDisk["Capacity (MiB)"] / 1024 # Use GiB instead of MiB
     df_vDisk.rename(columns={'Capacity (MiB)': 'Capacity (GiB)'}, inplace=True) # Rename Column
 
-    df_vSnapshot
-    df_vSnapshot.loc[:,"Size MiB (vmsn)"] = df_vSnapshot["Size MiB (vmsn)"] / 1024 # Use GiB instead of MiB
-    df_vSnapshot.rename(columns={'Size MiB (vmsn)': 'Size (GiB)'}, inplace=True) # Rename Column
+#    df_vSnapshot
+#    df_vSnapshot.loc[:,"Size MiB (vmsn)"] = df_vSnapshot["Size MiB (vmsn)"] / 1024 # Use GiB instead of MiB
+#    df_vSnapshot.rename(columns={'Size MiB (vmsn)': 'Size (GiB)'}, inplace=True) # Rename Column
+
+    # Convert and rename the appropriate column in vSnapshot
+    if 'Size MiB (vmsn)' in df_vSnapshot.columns:
+        df_vSnapshot.loc[:, "Size MiB (vmsn)"] = df_vSnapshot["Size MiB (vmsn)"] / 1024  # Use GiB instead of MiB
+        df_vSnapshot.rename(columns={'Size MiB (vmsn)': 'Size (GiB)'}, inplace=True)  # Rename Column
+    elif 'Size (MiB)' in df_vSnapshot.columns:
+        df_vSnapshot.loc[:, "Size (MiB)"] = df_vSnapshot["Size (MiB)"] / 1024  # Use GiB instead of MiB
+        df_vSnapshot.rename(columns={'Size (MiB)': 'Size (GiB)'}, inplace=True)  # Rename Column
 
     # Add / Generate Total Columns from vCPU performance percentage data
     df_vCPU['vCPUs'] = df_vCPU['vCPUs'].astype(np.int16)
