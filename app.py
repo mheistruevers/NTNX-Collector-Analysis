@@ -35,8 +35,8 @@ sizing_section = st.container() # Sizing section
 # Page content
 ######################
 with header_section:
-    st.markdown("<h1 style='text-align: left; color:#000000;'>Nutanix Collector Analyse - by Martin Stenke - Modded by Michael Heistruevers</h1>", unsafe_allow_html=True)
-    st.markdown('Ein Hobby-Projekt von [**Martin Stenke & Michael Heistruevers**](https://www.linkedin.com/in/michael-heistruevers/) zur einfachen Analyse einer [**Nutanix Collector**](https://collector.nutanix.com/) Auswertung. (Zuletzt aktualisiert: 08.10.2024)')
+    st.markdown("<h1 style='text-align: left; color:#000000;'>Nutanix Collector Analyse</h1>", unsafe_allow_html=True)
+    st.markdown('Ein Hobby-Projekt von Martin Stenke & [**Michael Heistruevers**](https://www.linkedin.com/in/michael-heistruevers/) zur einfachen Analyse einer [**Nutanix Collector**](https://collector.nutanix.com/) Auswertung. (Zuletzt aktualisiert: 08.10.2024)')
     st.info('***Disclaimer: Hierbei handelt es sich lediglich um ein Hobby Projekt - keine Garantie auf Vollständigkeit oder Korrektheit der Auswertung / Daten.***')
     st.markdown("---")
 
